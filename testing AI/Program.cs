@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 
 namespace NeuralNetwork
 {
@@ -16,8 +17,8 @@ namespace NeuralNetwork
             Chatbot chatbot = new Chatbot(embedding, neuralNet);
 
             // Train the chatbot on a sample document
-            string document = File.ReadAllText("markov.txt");
-            chatbot.Train(document, 100, 3);
+            string[] document = File.ReadAllLines("markov2.txt");
+            chatbot.Train(document.ToList(), 100, 3);
 
             // Predict the next words based on an input text
             string inputText = "The quick brown";

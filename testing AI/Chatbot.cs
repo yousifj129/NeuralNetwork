@@ -80,44 +80,62 @@ namespace NeuralNetwork
 
             return predictedWords;
         }
-        public void Train(string document, int epochs, int windowSize = 10)
+        public void Train(List<string> inputTexts, int numEpochs = 10, int windowSize = 10)
         {
-            // Split the document into words
-            List<string> words = document.Split(' ').ToList();
-
-            // Generate training data by sliding a window of fixed size over the words and using the next words as targets
-            List<double[]> inputSignals = new List<double[]>();
-            List<double[]> expectedSignals = new List<double[]>();
-            for (int i = 0; i < words.Count - windowSize - numOutputWords + 1; i++)
+            // Encode each input text into a list of word vectors
+            List<List<double[]>> inputSignalsList = new List<List<double[]>>();
+            foreach (string inputText in inputTexts)
             {
-                List<string> inputWords = words.GetRange(i, windowSize);
-                double[] inputSignal = new double[embedding.VectorSize * windowSize];
-                for (int j = 0; j < windowSize; j++)
+                List<string> inputWords = inputText.ToLower().Split(' ').ToList();
+                List<double[]> inputSignals = new List<double[]>();
+                foreach (string inputWord in inputWords)
                 {
-                    double[] wordVector = embedding.Encode(inputWords[j]);
-                    Array.Copy(wordVector, 0, inputSignal, j * embedding.VectorSize, embedding.VectorSize);
+                    double[] wordVector = embedding.Encode(inputWord);
+                    inputSignals.Add(wordVector);
                 }
-                inputSignals.Add(inputSignal);
-
-                List<string> expectedWords = words.GetRange(i + windowSize, numOutputWords);
-                double[] expectedSignal = new double[embedding.VectorSize * numOutputWords];
-                for (int j = 0; j < numOutputWords; j++)
-                {
-                    double[] wordVector = embedding.Encode(expectedWords[j]);
-                    Array.Copy(wordVector, 0, expectedSignal, j * embedding.VectorSize, embedding.VectorSize);
-                }
-                expectedSignals.Add(expectedSignal);
+                inputSignalsList.Add(inputSignals);
             }
 
-            // Train the neural network with the generated training data for the specified number of epochs
-            for (int epoch = 1; epoch <= epochs; epoch++)
+            // Train the neural network on each word individually using a sliding window approach
+            for (int epoch = 0; epoch < numEpochs; epoch++)
             {
-                Console.WriteLine($"Epoch {epoch}/{epochs}");
-                for (int i = 0; i < inputSignals.Count; i++)
+                for (int i = 0; i < inputSignalsList.Count; i++)
                 {
-                    float[][] inputSignal = new float[][] { Array.ConvertAll(inputSignals[i], x => (float)x) };
-                    float[][] expectedSignal = new float[][] { Array.ConvertAll(expectedSignals[i], x => (float)x) };
-                    neuralNet.Learn(inputSignal, expectedSignal, 1);
+                    List<double[]> inputSignals = inputSignalsList[i];
+                    List<double[]> expectedSignals = inputSignals.Skip(1).ToList();
+                    expectedSignals.Add(new double[embedding.VectorSize]); // add padding vector for last word
+                    for (int j = 0; j < inputSignals.Count - 1; j++)
+                    {
+                        // Construct the input and expected signals for the current word
+                        double[] inputSignal = new double[embedding.VectorSize * windowSize];
+                        double[] expectedSignal = expectedSignals[j];
+                        for (int k = 0; k < windowSize; k++)
+                        {
+                            int inputIndex = j + k - windowSize + 1;
+                            if (inputIndex < 0)
+                            {
+                                // If we're at the beginning of the input text, use padding vectors
+                                inputSignal[k * embedding.VectorSize] = 1;
+                            }
+                            else if (inputIndex >= inputSignals.Count)
+                            {
+                                // If we're at the end of the input text, use the last input signal
+                                double[] wordVector = inputSignals[inputSignals.Count - 1];
+                                Array.Copy(wordVector, 0, inputSignal, k * embedding.VectorSize, embedding.VectorSize);
+                            }
+                            else
+                            {
+                                // Otherwise, use the corresponding input signal
+                                double[] wordVector = inputSignals[inputIndex];
+                                Array.Copy(wordVector, 0, inputSignal, k * embedding.VectorSize, embedding.VectorSize);
+                            }
+                        }
+
+                        // Train the neural network on the current word using the input and expected signals
+                        float[][] inputVector = new float[][] { Array.ConvertAll(inputSignal, x => (float)x) };
+                        float[][] expectedVector = new float[][] { Array.ConvertAll(expectedSignal, x => (float)x) };
+                        neuralNet.Learn(inputVector, expectedVector, 1);
+                    }
                 }
             }
         }
