@@ -19,7 +19,7 @@ namespace NeuralNetwork
             // Train the chatbot on a sample document
             string[] document = File.ReadAllLines("markov2.txt");
             chatbot.Train(document.ToList(), 100, 3);
-
+            
             // Predict the next words based on an input text
             string inputText = "The quick brown";
             int numWords = 3;
