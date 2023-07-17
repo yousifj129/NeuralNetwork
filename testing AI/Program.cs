@@ -11,13 +11,16 @@ namespace NeuralNetwork
         {
             // Load the GloVe embedding and create a new neural network
             GloVeEmbedding embedding = new GloVeEmbedding("glove.6B.50d.txt");
-            NeuralNet neuralNet = new NeuralNet.Builder().SetNeuronsInputLayer(50).SetNeuronsForLayers(100, 50).SetActivationFunc(ActivationFunc.Sigmoid).Build();
+            NeuralNet neuralNet = new NeuralNet.Builder().SetNeuronsInputLayer(50).SetNeuronsForLayers(100, 50).SetActivationFunc(ActivationFunc.ReLU).Build();
 
             // Create a new chatbot instance
             Chatbot chatbot = new Chatbot(embedding, neuralNet);
 
             // Train the chatbot on a sample document
-            string[] document = File.ReadAllLines("markov2.txt");
+            string[] document = new string[]{
+                "hello what are you doing man",
+                "are you ok?"
+                };
             chatbot.Train(document.ToList(), 100, 3);
             
             // Predict the next words based on an input text

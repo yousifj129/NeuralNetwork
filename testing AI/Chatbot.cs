@@ -69,7 +69,7 @@ namespace NeuralNetwork
                 float[][] inputVector = new float[][] { Array.ConvertAll(inputSignal, x => (float)x) };
                 float[][] outputVector = neuralNet.Activate(inputVector);
                 float[] predictedSignal = Array.ConvertAll(outputVector[0], x => (float)x);
-                Console.WriteLine($"predicted vector {outputVector[0].Length}");
+                Console.WriteLine($"predicted vector {outputVector.Length}");
 
                 // Decode the predicted signal using GloVe embeddings
                 float[] wordVector = predictedSignal.Take(embedding.VectorSize).ToArray();
